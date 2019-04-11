@@ -1,5 +1,25 @@
-import sys
 import re
+import regex
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def draw(function, xMin, xMax):
+    X = np.array(range(xMin, xMax))
+    y = eval(formatLine(function))
+    plt.plot(X, y)
+    plt.show()
+
+
+def out(output):
+    print("  " + str(output))
+
+
+def intFloatCast(exp):
+    if re.match("\d+\.\d+", exp):
+        return float(exp)
+    else:
+        return int(exp)
 
 
 def error(message):
@@ -40,16 +60,11 @@ def pol_printSolution(solution, den, div):
 
 #   Handles natural input
 
-def pol_formatLine(line):
+def formatLine(line):
 
-
+    line = re.sub(regex.checkLetter, "X", line)
     line = re.sub("([\+\-=]|^)\s*(\d+(?:\.\d+)?)\s*\*?\s*[A-Z]\s*\^\s*(\d+)\s*(?=[\+\-\%\*=]|$)", r"\1 \2 * X^\3 ", line, flags=re.IGNORECASE)
-
-
     line = re.sub("(\d+(?:\.\d+)?)\s*\*?\s*[A-Z]\s*([\+\%\*\-=]|$)", r"\1 * X \2", line, flags=re.IGNORECASE)
-
     line = re.sub("\^", "**", line)
-
-
 
     return line
