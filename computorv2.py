@@ -1,42 +1,9 @@
+# -*- coding: utf-8 -*-
+
 import sys
-import regex
 import re
-import utils as u
-from .types import Matrice
-
-history = ""
-
-def read_flags():
-    global details
-    nbArgs = len(sys.argv)
-    if nbArgs > 1 and sys.argv[1] == "-d":
-        details = True
-
-
-def read_in():
-    global history
-    user_input = input("> ")
-    history += user_input + "\n"
-    return user_input.strip()
-
-
-def checkType(str):
-    match = re.findall(regex.checkMatrice, str)
-    if match:
-        return "matrice"
-    elif 'i' in str:
-        return "complex"
-    else:
-        return "var"
-
-
-def computeFn(func, x):
-    func = u.formatLine(func)
-    try:
-        res = eval(func)
-    except ZeroDivisionError:
-        res = u.error("Division by 0.")
-    return res
+from includes import regex, utils as u
+from includes.types import Matrice, Function
 
 
 def evalVar(exp, data):
@@ -46,24 +13,102 @@ def evalVar(exp, data):
             fun = m[0]
             param = m[1]
             if fun in data.keys():
+                fn = data[fun]["value"]
                 if param.isnumeric():
-                    exp = re.sub(fun + "\(" + param + "\)", str(computeFn(data[fun]["value"], param)), exp)
+                    exp = re.sub(fun + "\(" + param + "\)", str(fn.compute(param)), exp)
                     u.out(exp)
                 elif param in data.keys():
-                    exp = re.sub(fun + "\(" + param + "\)", str(computeFn(data[fun]["value"], data[param]["value"])), exp)
+                    exp = re.sub(fun + "\(" + param + "\)", str(fn.compute(data[param]["value"])), exp)
                 else:
                     return "Variable " + param + " is not assigned"
-    match = re.findall(regex.checkLetter, exp)                          # replace X || y by their result
+    match = re.findall(regex.checkLetter, exp)        # replace X || y by their result
+    matrice = []
     if match:
         for m in match:
             var = m[0]
             if var in data.keys():
-                exp = re.sub(var, data[var]["value"], exp)
-    try:
-        res = eval(exp)
-    except ZeroDivisionError:
-        res = u.error("Division by 0.")
-    return res
+                if data[var]["type"] == "var":
+                    exp = re.sub(var, str(data[var]["value"]), exp)
+                elif data[var]["type"] == "matrice":
+                    matrice.append(var)
+    if len(matrice) == 0:
+        try:
+            res = eval(exp)
+        except ZeroDivisionError:
+            res = u.error("Division by 0.")
+        return res
+    else:
+        i = 0
+        prior = True
+        matrices = {}
+        while prior:
+            prior = re.search("(\d+|[a-zA-Z])\s*([\*\/\%])\s*(\d+|[a-zA-Z])", exp)
+            if prior:
+                string = prior.group(0)
+                nb1 = prior.group(1)
+                ope = prior.group(2)
+                nb2 = prior.group(3)
+                if nb1.isnumeric() and nb2.isnumeric():
+                    exp = exp.replace(string, str(eval(string)))
+                else:
+                    m = Matrice()
+                    if nb1.isnumeric() and not nb2.isnumeric():
+                        if ope == '/' or ope == '%':
+                            return u.error("Can't resolve 'Real " + ope + " Matrice.")
+                        if nb2 in data.keys():
+                            m = data[nb2]["value"].calc(ope, {"type": "var", "value": u.intFloatCast(nb1)})
+                    elif not nb1.isnumeric() and not nb2.isnumeric():
+                        if nb2 in data.keys() and nb1 in data.keys():
+                            m = data[nb2]["value"].calc(ope, data[nb1])
+                    else:
+                        if nb2 in data.keys():
+                            m = data[nb1]["value"].calc(ope, {"type": "var", "value": u.intFloatCast(nb2)})
+                    exp = exp.replace(string, "mat")
+                    matrices[i] = m
+                    i += 1
+        print(exp)
+        second = True
+        i = 0
+        print(matrices)
+        while second:
+            second = re.search("(\d+|mat)\s*([\+\-])\s*(\d+|mat)", exp)
+            if second :
+                string = second.group(0)
+                nb1 = second.group(1)
+                ope = second.group(2)
+                nb2 = second.group(3)
+                if nb1.isnumeric() and nb2.isnumeric():
+                    exp = exp.replace(string, str(eval(string)))
+                else:
+                    m = Matrice()
+                    if nb1 == "mat" and nb2 == "mat":
+                        m = matrices[i]
+                        m.calc(ope, {"type": "matrice", "value": matrices[i+1]})
+                        matrices.pop(i)
+                        matrices.pop(i)
+                        # i += 2
+                    elif nb1.isnumeric() and nb2 == "mat":
+                        if ope == '-':
+                            return u.error("Can't resolve 'Real - Matrice.")
+                        m = m.parse(str(matrices[i]))
+                        m.print()
+                        m = m.calc('+', {"type": "var", "value": u.intFloatCast(nb1)})
+                        # matrices.pop(i)
+                        # i += 1
+                    else:
+                        m = matrices[i].calc(ope, {"type": "var", "value": u.intFloatCast(nb2)})
+                        print(m.parse(str(matrices[i])))
+                        matrices.pop(i)
+                        # i += 1
+                    exp = exp.replace(string, "mat")
+                    matrices[i] = m
+                    i += 1
+                    print(matrices)
+
+
+
+
+
 
 
 def assign(line, type, data):
@@ -75,7 +120,7 @@ def assign(line, type, data):
         data[key] = data[value]
     else:
         if type is None:
-            newType = checkType(value)
+            newType = u.checkType(value)
             if newType == "var":                                        # x = 3 || x = y + 3 || x = funX(2) etc.
                 value = evalVar(value, data)
             elif newType == "matrice":
@@ -88,22 +133,26 @@ def assign(line, type, data):
                 u.out("type is complex")
             data[key] = {"type": newType, "value": value}           # complexes a gerer
         elif type == "fn":
-            key = key[0:4]
-            data[key] = {"type": type, "value": value}              # funX(x) = ...
+            match = re.match(regex.func, key)
+            fn = Function(value, match.group(2))
+            key = match.group(1)
+            data[key] = {"type": type, "value": fn}              # funX(x) = ...
         if data[key]["type"] == "matrice":
             data[key]["value"].print()
+        elif data[key]["type"] == "fn":
+            u.out(data[key]["value"].function)
         else:
             u.out(data[key]["value"])
     return data
 
 
 def main():
-    read_flags()
+    u.read_flags()
     line = ""
     data = {}
     while line is not None:
         try:
-            line = read_in()
+            line = u.read_in()
             if len(line) == 0:
                 u.out(u.error("Empty input."))
             elif line == "env":
@@ -111,27 +160,37 @@ def main():
                     u.out(data[e]["type"] + " " + e + " = " + str(data[e]["value"]))
             elif line[0:4] == "draw":
                 match = re.match(regex.draw, line)
-                if match and match.group(1).strip() in data.keys():
-                    u.draw(data[match.group(1).strip()]["value"], -100, 100)
-                else:
-                    u.out(u.error("The function " + match.group(1).strip() + " is not assigned"))
+                if match:
+                    key = match.group(1).strip()
+                    if key in data.keys():
+                        fn = data[key]["value"]
+                        fn.draw(-100, 100)
+                    else:
+                        u.out(u.error("The function " + key + " is not assigned."))
             elif line == "q" or line == "quit" or line == "exit":
-                sys.exit(1)
+                sys.exit()
             else:
                 get = re.match(regex.get, line)
                 if get:                                                     # "... = ?"
                     key = get.group(1).strip()
                     if key in data.keys():                              # "x = ?"
-                        u.out(data[key]["value"])
+                        if data[key]["type"] == "matrice":
+                            data[key]["value"].print()
+                        else:
+                            u.out(data[key]["value"])
                     elif key[0:3] == "fun":
                         if key[0:4] in data.keys():                       # "funX(param) = ?"
                             match = re.match(regex.func, key)
                             if match:
                                 param = match.group(2).strip()
+                                fn = data[key[0:4]]["value"]
                                 if param.isnumeric():
-                                    u.out(computeFn(data[key[0:4]]["value"], param))
-                                elif param in data.keys():                                    # "funX(x) = ?"  /!\   gerer funX(x + 5)
-                                    u.out(computeFn(data[key[0:4]]["value"], data[param]["value"]))
+                                    u.out(fn.compute(param))
+                                elif param in data.keys():              # "funX(x) = ?"  /!\   gerer funX(x + 5)
+                                    if data[param]["type"] != "matrice":
+                                        u.out(fn.compute(data[param]["value"]))
+                                    else:
+                                        u.out(u.error("Cannot apply a function to a matrice."))
                                 else:
                                     u.out(u.error("The variable " + param + " is not assigned."))
                         else:
@@ -154,5 +213,6 @@ def main():
                     u.out(u.error("Invalid input."))
         except KeyboardInterrupt:
             sys.exit()
+
 
 main()
