@@ -150,21 +150,10 @@ class Matrice:
         return self
 
     def print(self, index):
-        output = ""
         if index is not None:
             print("  " + index + " = " + self.str)
         else:
-            for m in self.array:
-                first = True
-                output += '[ '
-                for e in m:
-                    if not first:
-                        output += ", "
-                    output += e.str
-                    first = False
-                output += ' ]\n  '
-            else:
-                u.out(output)
+            u.out(self.str)
 
     @staticmethod
     def get_type():
@@ -356,9 +345,9 @@ class Complex:
         self.imgIsNeg = False
 
     def parse(self, exp):
-        match = re.search(regex.complex, exp)
+        match = re.search(r"(?:(\d+(?:\.\d+)?)\s*[+-]\s*)?(?:(?!el)(\d+(?:\.\d+)?)\s*\*\s*)?i", exp)
         self.real = 0 if match.group(1) is None else u.int_float_cast(match.group(1).replace(" ", ""))
-        self.imaginary = u.int_float_cast(match.group(2).replace(" ", ""))
+        self.imaginary = 1 if match.group(2) is None else u.int_float_cast(match.group(2).replace(" ", ""))
         self.imgIsNeg = self.imaginary < 0
         self.str = (str(self.real) + (
             " + " if not self.imgIsNeg and self.imaginary != 0 else " ") if self.real != 0 else "") + (
@@ -468,7 +457,7 @@ class Complex:
                 u.warn("Can't elevate a complex to a " + type + ".", "ComputeError")
             for i in range(obj.value):
                 ret = copy.deepcopy(self)
-                for i in range(obj.value - 1):
+                for j in range(obj.value - 1):
                     ret = ret.calc('*', self)
 
         if ret.get_type() == "complex":

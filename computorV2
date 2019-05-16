@@ -3,6 +3,9 @@
 
 import sys
 import re
+
+import gnureadline
+
 import tests as t
 from resolve import resolve
 from includes import utils as u, regex, cpv1_computor as cpv1
@@ -36,6 +39,7 @@ def compute(line, data):
         key = get.group(1).strip()
         if key == "" or '=' in key:
             u.warn("Invalid input.", "SyntaxError")
+        # print("before resolve " + key)
         res = resolve(key, data)
         res.print(None)
     elif put:

@@ -1,4 +1,5 @@
 import re
+
 from includes.types import Complex, Matrice, Rational
 from includes import regex, utils as u
 
@@ -44,11 +45,12 @@ def parse(exp, data, i, tmp):
             key = "el" + str(i)
             tmp[key] = ret
             i += 1
-            exp = re.sub(r"(\d+(?:\.\d+)?|[A-Za-z])\s*\(" + brackets + r"\)", r"\1 * (" + brackets + ")", exp)
+            exp = re.sub(r"(\d+(?:\.\d+)?|[a-z]+)\s*\(" + re.escape(brackets) + r"\)", r"\1 * (" + brackets + ")", exp,
+                         flags=re.IGNORECASE)
             exp = exp.replace("(" + brackets + ")", key, 1)
 
     while match:                                # find and replace complexes
-        match = re.search(regex.complex, exp)
+        match = re.search(r"(?:\d+(?:\.\d+)?\s*[+-]\s*)?(?:(?!el)\d+(?:\.\d+)\s*\*\s*)?i", exp)
         if match:
             c = Complex()
             string = match.group(0)
@@ -84,7 +86,7 @@ def parse(exp, data, i, tmp):
                     tmp[key] = ret
                 elif match.group(2) in data.keys():
                     param = data[match.group(2)]
-                    ret = resolve(fn.formated.replace('X', param.str), data)
+                    ret = resolve(fn.formated.replace('X', '(' + param.str + ')'), data)
                     key = "el" + str(i)
                     i += 1
                     tmp[key] = ret
@@ -92,7 +94,7 @@ def parse(exp, data, i, tmp):
                 else:
                     param = resolve(match.group(2), data)
                     if param:
-                        ret = resolve(fn.formated.replace('X', param.str), data)
+                        ret = resolve(fn.formated.replace('X', '(' + param.str + ')'), data)
                         key = "el" + str(i)
                         i += 1
                         tmp[key] = ret
@@ -211,6 +213,7 @@ def compute(parsed):
 
 
 def resolve(exp, data):
+    # print("in resolve " + exp)
     i = 0
     tmp = {}
     exp = re.sub(r"(\d+(?:\.\d+)?)([A-Z]+)", r"\1 * \2", exp, flags=re.IGNORECASE)
