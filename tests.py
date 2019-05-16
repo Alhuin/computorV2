@@ -73,7 +73,8 @@ tests = [
     {"input": "z/v=?", "output": "[ 0.159, 0.004 ]\n  [ 0.214, 0.019 ]\n  "},
     {"input": "z/2=?", "output": "[ 0.5, 1 ]\n  [ 1, 1.5 ]\n  "},
     {"input": " a = [[5];[2]]", "output": "[ 5 ]\n  [ 2 ]\n  "},
-    {"input": " a * z = ?", "output": "\033[31m[ComputeError]\033[0m Can't resolve m1 * m2 : Number of raws in m1 doesn't match number of columns in m2."},
+    {"input": " a * z = ?", "output": "\033[31m[ComputeError]\033[0m Can't resolve m1 * m2 : Number of raws in m1 " +
+                                      "doesn't match number of columns in m2."},
     {"input": " a = [[5,2]]", "output": "[ 5, 2 ]\n  "},
     {"input": " a * z = ?", "output": "[ 9, 16 ]\n  "},
     {"input": "env", "output": ""},
@@ -100,7 +101,8 @@ tests = [
 
     {"input": "desc", "output": "Fonctions x Matrices"},
     {"input": "funX(z)=?", "output": "[ 25, 40 ]\n  [ 40, 65 ]\n  "},
-    {"input": "a = funX(z) - funX(2)", "output": "\033[31m[ComputeError]\033[0m Can't substract a rational to a matrice."},
+    {"input": "a = funX(z) - funX(2)", "output": "\033[31m[ComputeError]\033[0m Can't substract a rational " +
+                                                 "to a matrice."},
     {"input": "a = funX(z) - z", "output": "[ 24, 38 ]\n  [ 38, 62 ]\n  "},
     {"input": "a = ?", "output": "[ 24, 38 ]\n  [ 38, 62 ]\n  "},
     {"input": "env", "output": ""},
@@ -130,4 +132,3 @@ def test_output(output):
         print("output : ")
         print(str(output) + "\n<<<<<<<<<<<<<<<<<<<<\n")
     i += 1
-

@@ -10,10 +10,11 @@ from includes.customError import CustomError
 from includes.types import Function
 
 
-def parsePut(key, exp, data):
+def parse_put(key, exp, data):
     match = re.match(regex.func, key)
+    value = None
     if match:
-        exp = u.checkUnknownVars(exp, match.group(2).strip(), data)
+        exp = u.check_unknown_vars(exp, match.group(2).strip(), data)
         if exp is not None:
             value = Function(exp, match.group(2), data)
             key = match.group(1)[0:4]
@@ -21,7 +22,7 @@ def parsePut(key, exp, data):
             u.warn("Too many unknown variables.", "SyntaxError")
     else:
         value = resolve(exp, data)
-    if value.getType() == "function" and not re.match("fun[A-Za-z]", key):
+    if value is not None and value.get_type() == "function" and not re.match("fun[A-Za-z]", key):
         u.warn("Variables containing functions must be named 'fun[A-Z]'", "NameError")
     data[key] = value
     data[key].print(None)
@@ -44,9 +45,9 @@ def compute(line, data):
         key = put.group(1).strip()
         if key == "i":
             u.warn("Can't assign the variable i.", "NameError")
-        if re.match("^\s*fun[A-Z]\s*$", key, flags=re.IGNORECASE):
+        if re.match(r"^\s*fun[A-Z]\s*$", key, flags=re.IGNORECASE):
             u.warn("fun[A-Z] name is restricted to functions.", "NameError")
-        parsePut(key, exp, data)
+        parse_put(key, exp, data)
     elif reset:
         key = reset.group(1).strip()
         if key == "all":
@@ -58,8 +59,8 @@ def compute(line, data):
         else:
             u.warn(key + " matches no variable.\n", "NameError")
     else:
-        line = u.checkPolynomial(line, data)
-        cpv1.tryPolynomial(line)
+        line = u.check_polynomial(line, data)
+        cpv1.try_polynomial(line)
 
 
 def main():
@@ -68,7 +69,7 @@ def main():
         if sys.argv[1] == "-test":
             t.test = True
         elif sys.argv[1] == "-h" or sys.argv[1] == "--help":
-            u.printHelp()
+            u.print_help()
             sys.exit()
         else:
             print("\033[31m[IllegalOption]\033[0m Unsupported flag : " + sys.argv[1])

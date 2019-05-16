@@ -38,13 +38,13 @@ def parse(exp, data, i, tmp):
 
     brackets = True
     while brackets is not None:
-        brackets = u.findBrackets(exp)
+        brackets = u.find_brackets(exp)
         if brackets is not None:
             ret = resolve(brackets, data)
             key = "el" + str(i)
             tmp[key] = ret
             i += 1
-            exp = re.sub("(\d+(?:\.\d+)?|[A-Za-z])\s*\(" + brackets + "\)", r"\1 * (" + brackets + ")", exp)
+            exp = re.sub(r"(\d+(?:\.\d+)?|[A-Za-z])\s*\(" + brackets + r"\)", r"\1 * (" + brackets + ")", exp)
             exp = exp.replace("(" + brackets + ")", key, 1)
 
     while match:                                # find and replace complexes
@@ -70,12 +70,12 @@ def parse(exp, data, i, tmp):
 
     match = True
     while match:                                                # find and replace functions
-        match = re.search("(fun[a-z]\(([a-z\d\s+\-/*%^]+)\))", exp, flags=re.IGNORECASE)
+        match = re.search(r"(fun[a-z]\(([a-z\d\s+\-/*%^]+)\))", exp, flags=re.IGNORECASE)
         if match:
             obj = match.group(1)
             if obj[0:4] in data.keys():
                 fn = data[obj[0:4]]
-                param = u.intFloatCast(match.group(2))
+                param = u.int_float_cast(match.group(2))
                 if param:
                     key = "el" + str(i)
                     i += 1
@@ -102,36 +102,36 @@ def parse(exp, data, i, tmp):
 
     match = True
     while match:
-        match = re.search("(?:[^a-z]|^)(?!el)([A-Z]+)", exp, flags=re.IGNORECASE)
+        match = re.search(r"(?:[^a-z]|^)(?!el)([A-Z]+)", exp, flags=re.IGNORECASE)
         if match:
             obj = match.group(1)
             if obj in data.keys():
                 key = "el" + str(i)
                 i += 1
                 tmp[key] = data[obj]
-                exp = re.sub("([^a-z]|^)(?!el)([A-Za-z]+)", r"\1" + key, exp, 1)
+                exp = re.sub(r"([^a-z]|^)(?!el)([A-Za-z]+)", r"\1" + key, exp, 1)
             else:
                 u.warn("The variable " + obj + " is not assigned.", "NameError")
 
     match = True
     while match:
-        match = re.search("(?:[+\-*/%]|^)\s*(-\s*\d+(?:\.\d+)?)", exp)           # find and replace negative rationals
+        match = re.search(r"(?:[+\-*/%]|^)\s*(-\s*\d+(?:\.\d+)?)", exp)           # find and replace negative rationals
         if match:
             key = "el" + str(i)
-            var = Rational(u.intFloatCast(match.group(1).replace(" ", "")))
+            var = Rational(u.int_float_cast(match.group(1).replace(" ", "")))
             i += 1
             tmp[key] = var
-            exp = re.sub("([+\-*/%]|^)\s*(-\s*\d+(?:\.\d+)?)", r"\1 " + key, exp, 1)
+            exp = re.sub(r"([+\-*/%]|^)\s*(-\s*\d+(?:\.\d+)?)", r"\1 " + key, exp, 1)
 
     match = True
     while match:
-        match = re.search("(?<!el)\d+(?:\.\d+)?", exp)           # find and replace positive rationals
+        match = re.search(r"(?<!el)\d+(?:\.\d+)?", exp)           # find and replace positive rationals
         if match:
             key = "el" + str(i)
-            var = Rational(u.intFloatCast(match.group(0)))
+            var = Rational(u.int_float_cast(match.group(0)))
             i += 1
             tmp[key] = var
-            exp = re.sub("(?<!el)\d+(?:\.\d+)?", key, exp, 1)
+            exp = re.sub(r"(?<!el)\d+(?:\.\d+)?", key, exp, 1)
 
     return {"exp": exp, "index": i, "tmp": tmp}
 
@@ -161,7 +161,7 @@ def compute(parsed):
 
     match = True
     while match:
-        match = re.search("(el\d+)\s*(?:\*\*|\^)\s*(el\d+)", exp)
+        match = re.search(r"(el\d+)\s*(?:\*\*|\^)\s*(el\d+)", exp)
         if match:
             var1 = tmp[match.group(1)]
             var2 = tmp[match.group(2)]
@@ -169,11 +169,11 @@ def compute(parsed):
             key = "el" + str(i)
             i += 1
             tmp[key] = ret
-            exp = re.sub("(el\d+)\s*(?:\*\*|\^)\s*(el\d+)", key, exp, 1)
+            exp = re.sub(r"(el\d+)\s*(?:\*\*|\^)\s*(el\d+)", key, exp, 1)
 
     match = True
     while match:
-        match = re.search("(el\d+)\s*([*/%])\s*(el\d+)", exp)
+        match = re.search(r"(el\d+)\s*([*/%])\s*(el\d+)", exp)
         if match:
             var1 = tmp[match.group(1)]
             var2 = tmp[match.group(3)]
@@ -182,11 +182,11 @@ def compute(parsed):
             key = "el" + str(i)
             i += 1
             tmp[key] = ret
-            exp = re.sub("(el\d+)\s*([*/%])\s*(el\d+)", key, exp, 1)
+            exp = re.sub(r"(el\d+)\s*([*/%])\s*(el\d+)", key, exp, 1)
 
     match = True
     while match:
-        match = re.search("(el\d+)\s*([+-])\s*(el\d+)", exp)
+        match = re.search(r"(el\d+)\s*([+-])\s*(el\d+)", exp)
         if match:
             var1 = tmp[match.group(1)]
             var2 = tmp[match.group(3)]
@@ -195,12 +195,12 @@ def compute(parsed):
             key = "el" + str(i)
             i += 1
             tmp[key] = ret
-            exp = re.sub("(el\d+)\s*([+-])\s*(el\d+)", key, exp, 1)
+            exp = re.sub(r"(el\d+)\s*([+-])\s*(el\d+)", key, exp, 1)
 
     if exp.strip() in tmp.keys():
         return tmp[exp.strip()]
     else:
-        match = re.match("^-\s*(el\d+)$", exp.strip())
+        match = re.match(r"^-\s*(el\d+)$", exp.strip())
         if match and match.group(1) in tmp.keys():
             return tmp[match.group(1)].negate()
         elif "i" in exp.strip():
@@ -213,7 +213,7 @@ def compute(parsed):
 def resolve(exp, data):
     i = 0
     tmp = {}
-    exp = re.sub("(\d+(?:\.\d+)?)([A-Z]+)", r"\1 * \2", exp, flags=re.IGNORECASE)
+    exp = re.sub(r"(\d+(?:\.\d+)?)([A-Z]+)", r"\1 * \2", exp, flags=re.IGNORECASE)
     if exp.strip() in data.keys():
         return data[exp.strip()]
     parsed = parse(exp, data, i, tmp)

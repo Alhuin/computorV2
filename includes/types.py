@@ -1,6 +1,6 @@
 import re
 from includes import regex, utils as u
-import matplotlib.pyplot as plt                 # used for graphical representation of functions
+import matplotlib.pyplot as plt  # used for graphical representation of functions
 import numpy as np
 import copy
 
@@ -9,9 +9,9 @@ class Function:
 
     def __init__(self, function, param, data):
         self.function = function
-        exp = u.checkUnknownVars(function, param, data)
+        exp = u.check_unknown_vars(function, param, data)
         if exp is not None:
-            self.formated = u.formatLine(exp)
+            self.formated = u.format_line(exp)
         else:
             u.warn("Too many unknown variables.", "SyntaxError")
         self.param = param
@@ -22,20 +22,21 @@ class Function:
         else:
             print("  " + index + " = " + self.function)
 
-    def getType(self):
+    @staticmethod
+    def get_type():
         return "function"
 
-    def draw(self, xMin, xMax):
+    def draw(self, x_min, x_max):
         matrices = re.search(regex.checkMatrice, self.formated)
         complexes = re.search(regex.complex, self.formated)
-        zeroDiv = re.search("\/\s*0", self.formated)
+        zero_div = re.search(r"/\s*0", self.formated)
         if matrices is not None or complexes is not None:
             u.warn("Can't draw a function with matrices or complexes.", "DrawError")
-        if zeroDiv is not None:
+        if zero_div is not None:
             u.warn("Division by 0.", "ComputeError")
-        X = np.array(range(xMin, xMax))
+        x = np.array(range(x_min, x_max))
         y = eval(self.formated)
-        plt.plot(X, y)
+        plt.plot(x, y)
         plt.show()
 
 
@@ -43,7 +44,7 @@ class Rational:
 
     def __init__(self, value):
         self.value = value
-        self.str = str(u.intFloatCast(str(round(value, 3))))
+        self.str = str(u.int_float_cast(str(round(value, 3))))
         self.frac = None
 
     def print(self, index):
@@ -52,14 +53,15 @@ class Rational:
         else:
             print("  " + (index + " = " if index is not None else "") + (self.str if self.frac is None else self.frac))
 
-    def getType(self):
+    @staticmethod
+    def get_type():
         return "rational"
 
     def negate(self):
         return Rational(-self.value)
 
     def calc(self, operation, obj):
-        type = obj.getType()
+        type = obj.get_type()
 
         if operation == '+':
             if type == "rational":
@@ -73,7 +75,6 @@ class Rational:
                 return Rational(self.value - obj.value)
 
             elif type == "matrice":
-                #TODO checker real - matrice
                 u.warn("Can't substract a matrice to a rational.", "ComputeError")
 
             elif type == "complex":
@@ -95,9 +96,9 @@ class Rational:
                 ret = copy.deepcopy(obj)
                 if obj.width != obj.height:
                     u.warn("Can't compute the inverse of an unsquare matrice", "ComputeError")
-                if obj.array[0][0].getType() == "complex":
+                if obj.array[0][0].get_type() == "complex":
                     u.warn("Can't divide by a matrice of complexes (Mat[[complex]])", "ComputeError")
-                ret.array = ret.getInverse(ret.array)
+                ret.array = ret.get_inverse(ret.array)
                 return ret.calc('*', self)
             if obj.value == 0:
                 u.warn("Division by 0.", "ComputeError")
@@ -110,7 +111,6 @@ class Rational:
             return Rational(self.value / obj.value)
 
         elif operation == '%':
-            #TODO checker rational % matrice | complexe
             if type != "rational":
                 u.warn("Can't modulo a rational by a " + type + ".", "ComputeError")
             return Rational(self.value % obj.value)
@@ -141,7 +141,7 @@ class Matrice:
             elif width != len(elems):
                 u.warn("Matrice not well formated.", "syntaxError")
             for e in elems:
-                matrice[height].append(Rational(u.intFloatCast(e)))
+                matrice[height].append(Rational(u.int_float_cast(e)))
             height += 1
         self.height = height
         self.width = width
@@ -166,7 +166,8 @@ class Matrice:
             else:
                 u.out(output)
 
-    def getType(self):
+    @staticmethod
+    def get_type():
         return "matrice"
 
     def negate(self):
@@ -181,20 +182,20 @@ class Matrice:
         return [[m[row][col] for row in range(0, height)] for col in range(0, width)]
 
     @staticmethod
-    def getMinor(m, i, j):
+    def get_minor(m, i, j):
         return [row[:j] + row[j + 1:] for row in (m[:i] + m[i + 1:])]
 
-    def getDeterminant(self, m):
+    def get_determinant(self, m):
         if len(m) == 2:
             return m[0][0] * m[1][1] - m[0][1] * m[1][0]
 
         determinant = 0
         for c in range(len(m)):
-            determinant += ((-1) ** c) * m[0][c] * self.getDeterminant(self.getMinor(0, c))
+            determinant += ((-1) ** c) * m[0][c] * self.get_determinant(self.get_minor(m, 0, c))
         return determinant
 
-    def getInverse(self, m):
-        determinant = self.getDeterminant(m)
+    def get_inverse(self, m):
+        determinant = self.get_determinant(m)
         if determinant == 0:
             u.warn("Can't compute inverse of matrice, determinant is 0.", "ComputeError")
         if len(m) == 2:
@@ -203,18 +204,18 @@ class Matrice:
 
         cofactors = []
         for r in range(len(m)):
-            cofactorRow = []
+            cofactor_row = []
             for c in range(len(m)):
-                minor = self.getMinor(m, r, c)
-                cofactorRow.append(((-1) ** (r + c)) * self.getDeterminant(minor))
-            cofactors.append(cofactorRow)
+                minor = self.get_minor(m, r, c)
+                cofactor_row.append(((-1) ** (r + c)) * self.get_determinant(minor))
+            cofactors.append(cofactor_row)
         cofactors = self.transpose(cofactors, len(cofactors), len(cofactors[0]))
         for r in range(len(cofactors)):
             for c in range(len(cofactors)):
                 cofactors[r][c] /= determinant
         return cofactors
 
-    def toIntTab(self, array):
+    def to_int_tab(self, array):
         ret = copy.deepcopy(array)
         for i in range(self.height):
             for j in range(self.width):
@@ -224,7 +225,7 @@ class Matrice:
     def calc(self, operation, obj):
         ret = Matrice()
         new = copy.deepcopy(self.array)
-        type = obj.getType()
+        type = obj.get_type()
 
         if operation == "+":
             if type == "rational" or type == "complex":
@@ -290,13 +291,13 @@ class Matrice:
             elif type == "matrice":
                 if obj.width != obj.height:
                     u.warn("Can't compute the inverse of an unsquare matrice", "ComputeError")
-                if obj.array[0][0].getType() == "complex":
+                if obj.array[0][0].get_type() == "complex":
                     u.warn("Can't divide by a matrice of complexes (Mat[[complex]])", "ComputeError")
                 new = copy.deepcopy(obj.array)
                 for i in range(obj.height):
                     for j in range(obj.width):
                         new[i][j] = obj.array[i][j].value
-                new = self.getInverse(new)
+                new = self.get_inverse(new)
                 for i in range(len(new)):
                     for j in range(len(new)):
                         new[i][j] = Rational(new[i][j])
@@ -327,10 +328,10 @@ class Matrice:
         ret.height = self.height
         ret.width = self.width
         ret.str = "["
-        firstRaw = True
+        first_raw = True
         for i in range(len(new)):
-            if firstRaw:
-                firstRaw = False
+            if first_raw:
+                first_raw = False
             else:
                 ret.str += ';'
             ret.str += '['
@@ -356,12 +357,12 @@ class Complex:
 
     def parse(self, exp):
         match = re.search(regex.complex, exp)
-        self.real = 0 if match.group(1) is None else u.intFloatCast(match.group(1).replace(" ", ""))
-        self.imaginary = u.intFloatCast(match.group(2).replace(" ", ""))
+        self.real = 0 if match.group(1) is None else u.int_float_cast(match.group(1).replace(" ", ""))
+        self.imaginary = u.int_float_cast(match.group(2).replace(" ", ""))
         self.imgIsNeg = self.imaginary < 0
         self.str = (str(self.real) + (
             " + " if not self.imgIsNeg and self.imaginary != 0 else " ") if self.real != 0 else "") + (
-                      (str(self.imaginary) + "i") if self.imaginary != 0 else "")
+                       (str(self.imaginary) + "i") if self.imaginary != 0 else "")
 
         return self
 
@@ -371,7 +372,8 @@ class Complex:
         else:
             print("  " + index + " = " + self.str)
 
-    def getType(self):
+    @staticmethod
+    def get_type():
         return "complex"
 
     def negate(self):
@@ -386,7 +388,7 @@ class Complex:
 
     def calc(self, operation, obj):
         ret = copy.deepcopy(self)
-        type = obj.getType()
+        type = obj.get_type()
 
         if operation == "+":
             if type == "rational":
@@ -435,7 +437,7 @@ class Complex:
                 ret.imaginary = ret.imaginary / obj.value
 
             elif type == "complex":
-                div = Rational(obj.real**2 + obj.imaginary**2)
+                div = Rational(obj.real ** 2 + obj.imaginary ** 2)
                 conj = copy.deepcopy(obj)
                 conj.imaginary = -conj.imaginary
                 ret = self.calc('*', conj)
@@ -444,10 +446,10 @@ class Complex:
             elif type == "matrice":
                 if obj.width != obj.height:
                     u.warn("Can't compute the inverse of an unsquare matrice", "ComputeError")
-                if obj.array[0][0].getType() == "complex":
+                if obj.array[0][0].get_type() == "complex":
                     u.warn("Can't divide by a matrice of complexes (Mat[[complex]])", "ComputeError")
                 ret = copy.deepcopy(obj)
-                ret.array = ret.getInverse(obj.toIntTab(obj.array))
+                ret.array = ret.get_inverse(obj.to_int_tab(obj.array))
                 for i in range(ret.height):
                     for j in range(ret.width):
                         ret.array[i][j] = self.calc('*', Rational(ret.array[i][j]))
@@ -469,9 +471,11 @@ class Complex:
                 for i in range(obj.value - 1):
                     ret = ret.calc('*', self)
 
-        if ret.getType() == "complex":
-            ret.real = u.intFloatCast(str(ret.real))
-            ret.imaginary = u.intFloatCast(str(ret.imaginary))
+        if ret.get_type() == "complex":
+            ret.real = u.int_float_cast(str(ret.real))
+            ret.imaginary = u.int_float_cast(str(ret.imaginary))
             ret.imgIsNeg = ret.imaginary < 0
-            ret.str = (str(ret.real) + (" + " if not ret.imgIsNeg and ret.imaginary != 0 else " ") if ret.real != 0 else "") + ((str(ret.imaginary) + "i") if ret.imaginary != 0 else "")
+            ret.str = (str(ret.real) + (
+                " + " if not ret.imgIsNeg and ret.imaginary != 0 else " ") if ret.real != 0 else "") + (
+                          (str(ret.imaginary) + "i") if ret.imaginary != 0 else "")
         return ret

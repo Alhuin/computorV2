@@ -3,7 +3,6 @@ import tests as t
 from includes import regex
 from includes.customError import CustomError
 import sys
-import readline
 
 history = []
 
@@ -16,7 +15,7 @@ def pgcd(a, b):
         return pgcd(b, r)
 
 
-def findBrackets(exp):
+def find_brackets(exp):
     """
     Search for the first brackets pair in the expression
 
@@ -27,9 +26,10 @@ def findBrackets(exp):
         The matched expression, or None if no brackets where found
 
     :e.g.
-        findBrackets("5 + 2 *(3 + 8 *(5 - c))") = "3 + 8 *(5 - c)"
+        find_brackets("5 + 2 *(3 + 8 *(5 - c))") = "3 + 8 *(5 - c)"
     """
     bracket = 0
+    begin = 0
     first = True
     fun = False
 
@@ -72,15 +72,15 @@ def out(output):
         print("  " + str(output))
 
 
-def intFloatCast(exp):
+def int_float_cast(exp):
     try:
-        match = re.match("\s*[-+]?\s*\d+\.(\d+)", exp)
+        match = re.match(r"\s*[-+]?\s*\d+\.(\d+)", exp)
         if match:
             if match.group(1) != '0':
                 return float(exp)
             else:
                 return int(float(exp))
-        elif re.match("\s*[-+]?\s*\d+", exp):
+        elif re.match(r"\s*[-+]?\s*\d+", exp):
             return int(exp)
         else:
             return None
@@ -103,7 +103,8 @@ def warn(message, category):
         print(output)
     raise CustomError
 
-def printHelp():
+
+def print_help():
     print("\nThis program is a \033[33mscientific calculator\033[0m. \n")
     print("\033[33mRequirements :\033[0m (brew is needed)")
     print("- Automated installation: `./configure`")
@@ -111,8 +112,10 @@ def printHelp():
     print("     Install python3 `brew install python3`")
     print("     Replace python3 path in the shebang of computorV2 line 0 : `#![which python3]`")
     print("     Install Numpy (used for graphic rendering of functions) `[pip3 | python3 -m pip] install numpy`")
-    print("     Install Matplotlib (used for graphic rendering of functions) `[pip3 | python3 -m pip] install matplotlib`")
-    print("     Install GnuReadLine (used to navigate in the input with arrows) `[pip3 | python3 -m pip] install gnureadline`\n")
+    print("     Install Matplotlib (used for graphic rendering of functions) `[pip3 | python3 -m pip]"
+          + "install matplotlib`")
+    print("     Install GnuReadLine (used to navigate in the input with arrows) `[pip3 | python3 -m pip]"
+          + "install gnureadline`\n")
     print("\033[33mRules :\033[0m")
     print("- The variable 'i' can't be assigned.")
     print("- Variable name can't contain numbers.")
@@ -151,8 +154,7 @@ def printHelp():
     print("- ./computorV2 -test : Launch automated tests\n")
 
 
-
-def printEnv(data):
+def print_env(data):
     t.i += 1
     print("\n       \033[32m[ENV]\033[0m")
     if not data:
@@ -163,10 +165,10 @@ def printEnv(data):
     print('\n')
 
 
-def printHistory():
+def print_history():
     print("\n       \033[32m[HISTORY]\033[0m")
-    for input in history:
-        print(input)
+    for line in history:
+        print(line)
     print("\n")
 
 
@@ -192,55 +194,55 @@ def read_in(data):
         else:
             warn("The function " + fn + " is not assigned.", "NameError")
     elif line == "env":
-        printEnv(data)
+        print_env(data)
         raise CustomError
     elif line == "help":
-        printHelp()
+        print_help()
         raise CustomError
     elif line == "history":
-        printHistory()
+        print_history()
         raise CustomError
     return line
 
 
-def checkUnknownVars(exp, param, data):
-
-    match = re.findall("[^\d\Wi=]+", exp)
+def check_unknown_vars(exp, param, data):
+    match = re.findall(r"[^\d\Wi=]+", exp)
     for m in match:
         key = m.strip()
         if key != param:
             if key not in data.keys():
                 warn("Too many unknown variables.", "NameError")
             else:
-                exp = re.sub("(\d)" + key, r"\1 * " + key, exp, 1)
+                exp = re.sub(r"(\d)" + key, r"\1 * " + key, exp, 1)
                 exp = exp.replace(key, data[key].str)
     return exp
 
 
-def formatLine(line):
+def format_line(line):
     line = re.sub(regex.checkLetter, "X", line)
-    line = re.sub("([\-+*%/=])\s*(\d)", r"\1 \2", line, flags=re.IGNORECASE)
-    line = re.sub("(\d)\s*([\-+*%/=])", r"\1 \2", line, flags=re.IGNORECASE)
-    line = re.sub("([+-=]|^)\s*(\d+(?:\.\d+)?)\s*\*?\s*[A-HJ-Z]\s*\^\s*(\d+)\s*(?=[+\-%*=]|$)", r"\1 \2 * X^\3 ", line, flags=re.IGNORECASE)
-    line = re.sub("(\d+(?:\.\d+)?)\s*\*?\s*[A-HJ-Z]\s*([+%*\-=]|$)", r"\1 * X \2", line, flags=re.IGNORECASE)
-    line = re.sub("(\d+)\s*\*?\s*i", r"\1 * i", line, flags=re.IGNORECASE)
-    line = re.sub("\^", "**", line)
+    line = re.sub(r"([\-+*%/=])\s*(\d)", r"\1 \2", line, flags=re.IGNORECASE)
+    line = re.sub(r"(\d)\s*([\-+*%/=])", r"\1 \2", line, flags=re.IGNORECASE)
+    line = re.sub(r"([+-=]|^)\s*(\d+(?:\.\d+)?)\s*\*?\s*[A-HJ-Z]\s*\^\s*(\d+)\s*(?=[+\-%*=]|$)", r"\1 \2 * X^\3 ",
+                  line, flags=re.IGNORECASE)
+    line = re.sub(r"(\d+(?:\.\d+)?)\s*\*?\s*[A-HJ-Z]\s*([+%*\-=]|$)", r"\1 * X \2", line, flags=re.IGNORECASE)
+    line = re.sub(r"(\d+)\s*\*?\s*i", r"\1 * i", line, flags=re.IGNORECASE)
+    line = re.sub(r"\^", "**", line)
     return line
 
 
-def checkPolynomial(line, data):
+def check_polynomial(line, data):
     split = line.split('=')
 
     if len(split) != 2 or len(split[0]) == 0 or len(split[1]) == 0 or "?" in split[1] or re.search("fun[A-Za-z]", line):
         warn("Invalid input.", "SyntaxError")
 
-    if re.match("^\s*[A-WY-Z]+\d+(?:[A-WY-Z]+)?\s*$", split[0], flags=re.IGNORECASE):
+    if re.match(r"^\s*[A-WY-Z]+\d+(?:[A-WY-Z]+)?\s*$", split[0], flags=re.IGNORECASE):
         warn("Variable name can't contain numbers", "NameError")
-    line = checkUnknownVars(line, "x", data)
+    line = check_unknown_vars(line, "x", data)
 
     if not re.search("[Xx]", line):
         warn("Invalid input.", "SyntaxError")
 
-    if re.search("[Xx]\^\s*[^\d]", line):
+    if re.search(r"[Xx]\^\s*[^\d]", line):
         warn("Missing power.", "SyntaxError")
     return line
