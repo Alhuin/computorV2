@@ -1,6 +1,9 @@
 import re
 from includes import cpv1_functions as fn, utils as u
 
+check_polynomial = re.compile(r"((\s*[-+]|^)\s*(\d+(?:\.\d+)?((\s*\*)?\s*X(\^(\d+))?)?|X)\s*)+=(\s*[-+]?\s*"
+                              + r"(\d+(?:\.\d+)?((\s*\*)?\s*X(\^(\d+))?)?|X)\s*)+", flags=re.IGNORECASE)
+
 regex_pattern = re.compile(r"(-?\s*\d+(?:\.\d+)?)\s*\*\s*X\^(\d+)")
 details = True
 
@@ -130,7 +133,8 @@ def compute(line, elements, side):
 
 def try_polynomial(line):
     elements = {0: None, 1: None, 2: None}
-    try:
+    match = re.match(check_polynomial, line)
+    if match:
         compute(fn.format_line(line), elements, 0)
-    except Exception:
-        u.warn("Invalid input.", "SyntaxError")
+    else:
+        u.warn("Invalid Input.", "SyntaxError")

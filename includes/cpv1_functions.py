@@ -1,5 +1,6 @@
-from includes import utils as u
 import re
+
+from includes import utils as u
 
 
 def pgcd(a, b):
@@ -38,7 +39,6 @@ def print_solution(solution, den, div):
 #   Handles natural input
 
 def format_line(line):
-
     # replace 6^2 | 6*2 | 6/2 by the result
 
     match = True
@@ -49,7 +49,6 @@ def format_line(line):
             exp = match.group(1).replace('^', '**')
             res = eval(exp)
             line = line.replace(match.group(1), str(res))
-    print(line)
 
     # replace 6x^2 | 6*x^2  by 6 * X^2
 

@@ -1,8 +1,10 @@
 import re
-from includes import regex, utils as u
-import matplotlib.pyplot as plt  # used for graphical representation of functions
-import numpy as np
 import copy
+
+import matplotlib.pyplot as plt  # used for graphical representation of functions
+import numpy as np                  # idem
+
+from includes import regex, utils as u
 
 
 class Function:
@@ -28,15 +30,15 @@ class Function:
 
     def draw(self, x_min, x_max):
         matrices = re.search(regex.checkMatrice, self.formated)
-        complexes = re.search(regex.complex, self.formated)
-        zero_div = re.search(r"/\s*0", self.formated)
+        complexes = re.search(r"(?:\d+(?:\.\d+)?\s*[+-]\s*)?(?:(?!el)\d+(?:\.\d+)\s*\*\s*)?i", self.formated)
+        zero_div = re.search(r"/\s*\(?\s*0\s*\)?", self.formated)
         if matrices is not None or complexes is not None:
             u.warn("Can't draw a function with matrices or complexes.", "DrawError")
         if zero_div is not None:
             u.warn("Division by 0.", "ComputeError")
-        x = np.array(range(x_min, x_max))
+        X = np.array(range(x_min, x_max))
         y = eval(self.formated)
-        plt.plot(x, y)
+        plt.plot(X, y)
         plt.show()
 
 
@@ -91,7 +93,11 @@ class Rational:
         elif operation == '/':
             frac = None
             if type == "complex":
-                u.warn("Can't divide a rational by a " + type + ".", "ComputeError")
+                conj = obj.get_conj()
+                div = self.calc('*', conj)
+                den = obj.calc('*', conj)
+                ret = div.calc('/', den)
+                return ret
             elif type == "matrice":
                 ret = copy.deepcopy(obj)
                 if obj.width != obj.height:
@@ -150,10 +156,21 @@ class Matrice:
         return self
 
     def print(self, index):
+        output = ""
         if index is not None:
             print("  " + index + " = " + self.str)
         else:
-            u.out(self.str)
+            for m in self.array:
+                first = True
+                output += '[ '
+                for e in m:
+                    if not first:
+                        output += ", "
+                    output += e.str
+                    first = False
+                output += ' ]\n  '
+            else:
+                u.out(output)
 
     @staticmethod
     def get_type():
@@ -365,6 +382,15 @@ class Complex:
     def get_type():
         return "complex"
 
+    def get_conj(self):
+        conj = copy.deepcopy(self)
+        conj.imaginary = -conj.imaginary
+        conj.str = (str(conj.real) + (
+            " + " if not conj.imgIsNeg and conj.imaginary != 0 else " ") if conj.real != 0 else "") + (
+                       (str(conj.imaginary) + "i") if conj.imaginary != 0 else "")
+        conj.imgIsNeg = conj.imaginary < 0
+        return conj
+
     def negate(self):
         ret = copy.deepcopy(self)
         ret.real = -self.real
@@ -422,13 +448,12 @@ class Complex:
 
         elif operation == "/":
             if type == "rational":
-                ret.real = ret.real / obj.value
-                ret.imaginary = ret.imaginary / obj.value
+                ret.real = round(ret.real / obj.value, 3)
+                ret.imaginary = round(ret.imaginary / obj.value, 3)
 
             elif type == "complex":
                 div = Rational(obj.real ** 2 + obj.imaginary ** 2)
-                conj = copy.deepcopy(obj)
-                conj.imaginary = -conj.imaginary
+                conj = obj.get_conj()
                 ret = self.calc('*', conj)
                 ret = ret.calc('/', div)
 
