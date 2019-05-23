@@ -117,8 +117,8 @@ def print_help():
     print("     Install GnuReadLine (used to navigate in the input with arrows) `[pip3 | python3 -m pip]"
           + "install gnureadline`\n")
     print("\033[33mRules :\033[0m")
+    print("= Variable names are case sensitive and can't contain numbers.")
     print("- The variable 'i' can't be assigned.")
-    print("- Variable name can't contain numbers.")
     print("- Variables containing functions must be named 'fun[A-Z]'.\n")
     print("\033[32mHandled types :\033[0m")
     print("- Rationals (including natural integers) :")
@@ -213,7 +213,10 @@ def check_unknown_vars(exp, param, data):
                 warn("Too many unknown variables.", "NameError")
             else:
                 exp = re.sub(r"(\d)" + key, r"\1 * " + key, exp, 1)
-                exp = exp.replace(key, "(" + data[key].str + ")")
+                string = data[key].str
+                if data[key].get_type() == "complex":
+                    string = "(" + string + ")"
+                exp = exp.replace(key, string)
     return exp
 
 
